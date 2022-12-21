@@ -27,8 +27,9 @@ elif SYS_PLATFORM == 'Darwin':
     DRIVER_PATH = os.path.join(
         ROOT_DIR, "driver/chromedriver_mac64/chromedriver")
 else:
-    DRIVER_PATH = os.path.join(
-        ROOT_DIR, "driver/chromedriver_linux64/chromedriver")
+    #DRIVER_PATH = os.path.join(
+    #    ROOT_DIR, "driver/chromedriver_linux64/chromedriver")
+    DRIVER_PATH = "/usr/bin/chromedriver"
 
 ''' Logging Configuration '''
 if SYS_PLATFORM == 'Windows':
