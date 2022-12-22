@@ -197,14 +197,14 @@ def get_flight(city, departure_day, departure_time, arrival_day, arrival_time):
             if len(item) == 14 :
                 item_str = f'''
 🛩️\t{item[11]}\t{item[13]}
-🛫 {item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}
-🛬 {item[0]}\t{item[6]}\t{item[7]}\t{item[8]}\t{item[9]}\t{item[10]}
+🛫 {item[0]:　<9}\t{item[1]:　<9}\t{item[2]:　<9}\t{item[3]:　<2}\t{item[4]:　<4} {item[5]:　<3}
+🛬 {item[0]:　<9}\t{item[6]:　<9}\t{item[7]:　<9}\t{item[8]:　<2}\t{item[9]:　<4} {item[10]:　<3}
 '''
             elif len(item) == 15 :
                 item_str = f'''
 🛩️\t{item[12]}\t{item[14]}
-🛫 {item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}
-🛬 {item[6]}\t{item[7]}\t{item[8]}\t{item[9]}\t{item[10]}\t{item[11]}
+🛫 {item[0]:　<9}\t{item[1]:　<9}\t{item[2]:　<9}\t{item[3]:　<2}\t{item[4]:　<4} {item[5]:　<3}
+🛬 {item[6]:　<9}\t{item[7]:　<9}\t{item[8]:　<9}\t{item[9]:　<2}\t{item[10]:　<4} {item[11]:　<3}
 '''
             else :
                 item_str = val.text.replace('\n',' ')
