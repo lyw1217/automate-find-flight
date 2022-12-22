@@ -32,7 +32,7 @@ def post_slack_message(s: SlackAPI, text: str):
 
 slack = init_slack_channel(SLACK_CHANNEL)
     
-def getFlight():
+def get_flight(city, departure_day, departure_time, arrival_day, arrival_time):
     def wait_until(xpath_str):
         time.sleep(0.1)
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, xpath_str)))
@@ -49,97 +49,183 @@ def getFlight():
     driver.get(MAIN_URL)
 
     # 팝업 닫기
-    wait_until('//*[@id="__next"]/div/div[1]/div[9]/div/div[2]/button[1]')
-    popup_btn = driver.find_element(By.XPATH, '//*[@id="__next"]/div/div[1]/div[9]/div/div[2]/button[1]')
+    xpath = '//*[@id="__next"]/div/div[1]/div[9]/div/div[2]/button[1]'
+    wait_until(xpath)
+    popup_btn = driver.find_element(By.XPATH, xpath)
     popup_btn.click()
 
     # 가는 날 클릭
-    wait_until('//button[text() = "가는 날"]')
-    begin_date_btn = driver.find_element(By.XPATH, '//button[text() = "가는 날"]')
+    xpath = '//button[text() = "가는 날"]'
+    wait_until(xpath)
+    begin_date_btn = driver.find_element(By.XPATH, xpath)
     begin_date_btn.click()
 
-    # 출발일 클릭
-    wait_until('//b[text() = "26"]')
-    departure_day = driver.find_elements(By.XPATH, '//b[text() = "26"]') # TODO
-    departure_day[1].click()
-
-    # 도착일 클릭
-    wait_until('//b[text() = "29"]')
-    arrival_day = driver.find_elements(By.XPATH, '//b[text() = "29"]') # TODO
-    arrival_day[1].click()
-
+    try:
+        # 출발일 파싱
+        dep_year = departure_day.split('-')[0]
+        dep_month = departure_day.split('-')[1]
+        dep_day = departure_day.split('-')[2]
+        # 출발일 클릭
+        xpath = f'//div[contains(@class, "month")]'
+        dep_elems = driver.find_elements(By.XPATH, xpath)
+        find_flag = False
+        i = 0
+        for dep_elem in dep_elems :
+            if f"20{dep_year}.{dep_month}." in dep_elem.text.split('\n') :
+                xpath = f'//b[text() = "{dep_day}"]'
+                departure_day_btn = driver.find_elements(By.XPATH, xpath)
+                departure_day_btn[i].click()
+                find_flag = True
+                break
+            else :
+                i += 1
+        if find_flag == False :
+            raise Exception("Not found departure datetime")
+    except Exception as e :
+        res = "출발일이 잘못 설정되었습니다."
+        root_logger.critical(f"{res}, exception = {e}")
+        return res
+    
+    try:
+        # 도착일 파싱
+        arr_year = arrival_day.split('-')[0]
+        arr_month = arrival_day.split('-')[1]
+        arr_day = arrival_day.split('-')[2]
+        # 도착일 클릭
+        xpath = f'//div[contains(@class, "month")]'
+        arr_elems = driver.find_elements(By.XPATH, xpath)
+        find_flag = False
+        i = 0
+        for arr_elem in arr_elems :
+            if f"20{arr_year}.{arr_month}." in arr_elem.text.split('\n') :
+                xpath = f'//b[text() = "{arr_day}"]'
+                arrival_day_btn = driver.find_elements(By.XPATH, xpath)
+                arrival_day_btn[i].click()
+                find_flag = True
+                break
+            else :
+                i += 1
+        if find_flag == False :
+            raise Exception("Not found arrival datetime")
+    except Exception as e :
+        res = "도착일이 잘못 설정되었습니다."
+        root_logger.critical(f"{res}, exception = {e}")
+        return res
+    
     # 도착 도시 클릭
-    wait_until('//b[text() = "도착"]')
-    arrival_city = driver.find_element(By.XPATH, '//b[text() = "도착"]')
-    arrival_city.click()
+    xpath = '//b[text() = "도착"]'
+    wait_until(xpath)
+    arrival_city_btn = driver.find_element(By.XPATH, xpath)
+    arrival_city_btn.click()
 
     # 국가 검색
-    wait_until('//input[contains(@placeholder, "국가")]')
-    search_input = driver.find_element(By.XPATH, '//input[contains(@placeholder, "국가")]')
+    xpath = '//input[contains(@placeholder, "국가")]'
+    wait_until(xpath)
+    search_input = driver.find_element(By.XPATH, xpath)
     search_input.clear()
-    search_input.send_keys(f"오사카\n") # TODO
+    search_input.send_keys(f"{city}\n")
     
     # 검색 첫 번째 국가 클릭
-    wait_until('//mark[contains(text(), 오사카)]')
-    search_result = driver.find_elements(By.XPATH, '//mark[contains(text(), 오사카)]') # TODO
-    search_result[0].click()
+    try :
+        xpath = f'//mark[contains(text(), {city})]'
+        wait_until(xpath)
+        search_result = driver.find_elements(By.XPATH, xpath)
+        search_result[0].click()
+    except Exception as e :
+        res = "국가가 잘못 설정되었습니다."
+        root_logger.critical(f"{res}, exception = {e}")
+        return res
 
     # 항공권 검색 클릭
-    wait_until('//span[contains(text(), "항공권 검색")]')
-    search = driver.find_element(By.XPATH, '//span[contains(text(), "항공권 검색")]')
-    search.click()
+    xpath = '//span[contains(text(), "항공권 검색")]'
+    wait_until(xpath)
+    search_btn = driver.find_element(By.XPATH, xpath)
+    search_btn.click()
 
-    # 시간 필터링
-    wait_until('//span[contains(text(), "시각/가격")]')
-    time_filter = driver.find_element(By.XPATH, '//span[contains(text(), "시각/가격")]')
+    # 시간 필터링 클릭
+    xpath = '//span[contains(text(), "시각/가격")]'
+    wait_until(xpath)
+    time_filter = driver.find_element(By.XPATH, xpath)
     time_filter.click()
-    # 가는 날
-    wait_until('//button[contains(text(), "06:00-09:00")]') # TODO
-    departure_time1 = driver.find_elements(By.XPATH, '//button[contains(text(), "06:00-09:00")]')
-    departure_time1[0].click()
-    # 오는 날
-    wait_until('//button[contains(text(), "15:00-18:00")]') # TODO
-    arrival_time1 = driver.find_elements(By.XPATH, '//button[contains(text(), "15:00-18:00")]')
-    arrival_time1[1].click()
-    arrival_time2 = driver.find_elements(By.XPATH, '//button[contains(text(), "18:00-21:00")]')
-    arrival_time2[1].click()
+    
+    try :
+        # 가는 날 시간대 파싱
+        for t in departure_time.split(',') :
+            t = t.split('-')    
+            # 가는 날 시간대 클릭
+            xpath = f'//button[contains(text(), "{t[0]}:00-{t[1]}:00")]'
+            wait_until(xpath)
+            departure_time_btn = driver.find_elements(By.XPATH, xpath)
+            departure_time_btn[0].click()
+    except Exception as e :
+        res = "가는 날 시간대가 잘못 설정되었습니다."
+        root_logger.critical(f"{res}, exception = {e}")
+        return res
 
-    # 적용
-    wait_until('//button[contains(text(), "적용")]') # TODO
-    confirm_btn = driver.find_element(By.XPATH, '//button[contains(text(), "적용")]')
+    try :
+        # 오는 날 시간대 파싱
+        for t in arrival_time.split(',') :
+            t = t.split('-')    
+            # 오는 날 시간대 클릭
+            xpath = f'//button[contains(text(), "{t[0]}:00-{t[1]}:00")]'
+            wait_until(xpath)
+            arrival_time_btn = driver.find_elements(By.XPATH, xpath)
+            arrival_time_btn[1].click()
+    except Exception as e :
+        res = "오는 날 시간대가 잘못 설정되었습니다."
+        root_logger.critical(f"{res}, exception = {e}")
+        return res
+
+    # 적용 클릭
+    xpath = '//button[contains(text(), "적용")]'
+    wait_until(xpath)
+    confirm_btn = driver.find_element(By.XPATH, xpath)
     confirm_btn.click()
 
-    # 출력
-    wait_until('//div[contains(@class, "concurrent_ConcurrentItemContainer")]') # TODO
-    confirm_btn = driver.find_elements(By.XPATH, '//div[contains(@class, "concurrent_ConcurrentItemContainer")]')
-
-    print(confirm_btn[0].text.replace('\n',' '))
-    print(confirm_btn[0].text.replace('\n',' ').split(" ")[-1].split("원")[0])
-    print("")
-    print(confirm_btn[1].text.replace('\n',' '))
-    print(confirm_btn[1].text.replace('\n',' ').split(" ")[-1].split("원")[0])
-    print("")
-    print(confirm_btn[2].text.replace('\n',' '))
-    print(confirm_btn[2].text.replace('\n',' ').split(" ")[-1].split("원")[0])
+    # 결과 파싱
+    xpath = '//div[contains(@class, "concurrent_ConcurrentItemContainer")]'
+    wait_until(xpath)
+    items = driver.find_elements(By.XPATH, xpath)
 
     result = list()
-
-    result.append(confirm_btn[0].text.replace('\n',' '))
-    result.append(confirm_btn[1].text.replace('\n',' '))
-    result.append(confirm_btn[2].text.replace('\n',' '))
-
-    return result
-
-def findFlight():
     
+    avoid_company = "없음"
+    for val in items :
+        if avoid_company not in val.text :
+            item = val.text.replace('\n',' ').split(' ')
+            print(f"len(result)={len(result)}, len(item)={len(item)}, {item}")
+            if len(item) == 14 :
+                item_str = f'''
+🛩️\t{item[11]}\t{item[13]}
+🛫 {item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}
+🛬 {item[0]}\t{item[6]}\t{item[7]}\t{item[8]}\t{item[9]}\t{item[10]}
+'''
+            elif len(item) == 15 :
+                item_str = f'''
+🛩️\t{item[12]}\t{item[14]}
+🛫 {item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}
+🛬 {item[6]}\t{item[7]}\t{item[8]}\t{item[9]}\t{item[10]}\t{item[11]}
+'''
+            else :
+                item_str = val.text.replace('\n',' ')
+            result.append(item_str)
+            if len(result) > 3 :
+                break
+
+    result.append(f"{driver.current_url}")
+
+    return ''.join(result)
+
+def find_flight(city, departure_day, departure_time, arrival_day, arrival_time):
+
     while True :
         try :
-            post_slack_message(slack, "\n".join(getFlight()))
-            time.sleep(1800)
+            res = get_flight(city, departure_day, departure_time, arrival_day, arrival_time)
+            post_slack_message(slack, res)
+            return res
 
         except Exception as e :
             print(e)
             print("")
             print("Error 발생, 재시도")
             time.sleep(5)
-        

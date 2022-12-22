@@ -98,3 +98,13 @@ if os.path.isfile(SECRETS_PATH):
             root_logger.critical(f'Loaded SLACK_KEY')
         except KeyError :
             root_logger.critical(f"No SLACK KEY.")
+        try :
+            DISCORD_TOKEN = sec['DISCORD_TOKEN']
+            root_logger.critical(f'Loaded DISCORD_TOKEN')
+        except KeyError :
+            root_logger.critical(f"No DISCORD_TOKEN.")
+        try :
+            DISCORD_CHANNEL = int(sec['DISCORD_CHANNEL'])
+            root_logger.critical(f'Loaded DISCORD_CHANNEL')
+        except KeyError :
+            root_logger.critical(f"No DISCORD_CHANNEL.")
