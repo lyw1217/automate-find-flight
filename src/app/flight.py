@@ -200,14 +200,14 @@ def get_flight(city, departure_day, departure_time, arrival_day, arrival_time):
 🛫 {item[0]:　<9}\t{item[1]:　<9}\t{item[2]:　<9}\t{item[3]:　<2}\t{item[4]:　<4} {item[5]:　<3}
 🛬 {item[0]:　<9}\t{item[6]:　<9}\t{item[7]:　<9}\t{item[8]:　<2}\t{item[9]:　<4} {item[10]:　<3}
 '''
-            elif len(item) == 15 :
+            elif len(item) == 15 or len(item) == 16 :
                 item_str = f'''
 🛩️\t{item[12]}\t{item[14]}
 🛫 {item[0]:　<9}\t{item[1]:　<9}\t{item[2]:　<9}\t{item[3]:　<2}\t{item[4]:　<4} {item[5]:　<3}
 🛬 {item[6]:　<9}\t{item[7]:　<9}\t{item[8]:　<9}\t{item[9]:　<2}\t{item[10]:　<4} {item[11]:　<3}
 '''
             else :
-                item_str = val.text.replace('\n',' ')
+                item_str = "🛩️\t" + val.text.replace('\n',' ')
             result.append(item_str)
             if len(result) > 3 :
                 break
