@@ -84,7 +84,7 @@ class MyClient(discord.Client):
                 
     @tasks.loop(seconds=1800)  # task runs every 1800 seconds
     async def find_flight_task(self, city, departure_day, departure_time, arrival_day, arrival_time):
-        res = find_flight(city, departure_day, departure_time, arrival_day, arrival_time)
+        res = await find_flight(city, departure_day, departure_time, arrival_day, arrival_time)
         channel = self.get_channel(DISCORD_CHANNEL)  # channel ID goes here
         await channel.send(res)
 

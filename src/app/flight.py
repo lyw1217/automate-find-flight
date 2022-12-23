@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import asyncio
 
 from app.config import *
 from app.endpoint import *
@@ -32,7 +33,7 @@ def post_slack_message(s: SlackAPI, text: str):
 
 slack = init_slack_channel(SLACK_CHANNEL)
     
-def get_flight(city, departure_day, departure_time, arrival_day, arrival_time):
+async def get_flight(city, departure_day, departure_time, arrival_day, arrival_time):
     def wait_until(xpath_str):
         time.sleep(0.1)
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, xpath_str)))
@@ -188,39 +189,37 @@ def get_flight(city, departure_day, departure_time, arrival_day, arrival_time):
     items = driver.find_elements(By.XPATH, xpath)
 
     result = list()
+
+    result.append(time.strftime('< 항공권 검색 결과 > %Y.%m.%d - %H:%M:%S'))
     
     avoid_company = "없음"
     for val in items :
         if avoid_company not in val.text :
-            item = val.text.replace('\n',' ').split(' ')
+            item = val.text.replace('\n',' ').split('분')
             print(f"len(result)={len(result)}, len(item)={len(item)}, {item}")
-            if len(item) == 14 :
-                item_str = f'''
-🛩️\t{item[11]}\t{item[13]}
-🛫 {item[0]:　<9}\t{item[1]:　<9}\t{item[2]:　<9}\t{item[3]:　<2}\t{item[4]:　<4} {item[5]:　<3}
-🛬 {item[0]:　<9}\t{item[6]:　<9}\t{item[7]:　<9}\t{item[8]:　<2}\t{item[9]:　<4} {item[10]:　<3}
+            # len(result)=0, len(item)=3, ['피치항공 07:30ICN 09:15KIX 직항, 01시간 45', ' 19:50KIX 21:50ICN 직항, 02시간 00', ' 성인 왕복 422,456원~']
+            # len(result)=1, len(item)=3, ['피치항공 07:30ICN 09:15KIX 직항, 01시간 45', ' 에어부산 15:50KIX 18:10ICN 직항, 02시간 20', ' 성인 왕복 469,980원~']
+            # len(result)=2, len(item)=3, ['티웨이항공 07:55ICN 09:45KIX 직항, 01시간 50', ' 15:30KIX 17:35ICN 직항, 02시간 05', ' 성인 왕복 498,165원~']
+            # len(result)=3, len(item)=3, ['피치항공 07:30ICN 09:15KIX 직항, 01시간 45', ' 티웨이항공 15:30KIX 17:35ICN 직항, 02시간 05', ' 성인 왕복 506,360원~']
+            item_str = f'''
+🛩️ {item[2].strip()}
+🛫 {item[0].strip()}분
+🛬 {item[1].strip()}분
 '''
-            elif len(item) == 15 or len(item) == 16 :
-                item_str = f'''
-🛩️\t{item[12]}\t{item[14]}
-🛫 {item[0]:　<9}\t{item[1]:　<9}\t{item[2]:　<9}\t{item[3]:　<2}\t{item[4]:　<4} {item[5]:　<3}
-🛬 {item[6]:　<9}\t{item[7]:　<9}\t{item[8]:　<9}\t{item[9]:　<2}\t{item[10]:　<4} {item[11]:　<3}
-'''
-            else :
-                item_str = "🛩️\t" + val.text.replace('\n',' ')
+
             result.append(item_str)
-            if len(result) > 3 :
+            if len(result) >= 5 :
                 break
 
     result.append(f"{driver.current_url}")
 
     return ''.join(result)
 
-def find_flight(city, departure_day, departure_time, arrival_day, arrival_time):
+async def find_flight(city, departure_day, departure_time, arrival_day, arrival_time):
 
     while True :
         try :
-            res = get_flight(city, departure_day, departure_time, arrival_day, arrival_time)
+            res = await get_flight(city, departure_day, departure_time, arrival_day, arrival_time)
             post_slack_message(slack, res)
             return res
 
@@ -228,4 +227,5 @@ def find_flight(city, departure_day, departure_time, arrival_day, arrival_time):
             print(e)
             print("")
             print("Error 발생, 재시도")
-            time.sleep(5)
+            #time.sleep(5)
+            await asyncio.sleep(5)
