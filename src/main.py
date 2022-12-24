@@ -8,7 +8,7 @@ if __name__ == "__main__":
     #
     #
     root_logger.critical(r"======================================")
-    root_logger.critical(r"     _______            __ by Youngwoo")
+    root_logger.critical(r"     _______           __  by Youngwoo")
     root_logger.critical(r"    / ____(_)___  ____/ /             ")
     root_logger.critical(r"   / /_  / / __ \/ __  /              ")
     root_logger.critical(r"  / __/ / / / / / /_/ /               ")
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     root_logger.critical(f"  LOGGING PATH = {LOGGING_PATH}")
     root_logger.critical(f"  DRIVER  PATH = {DRIVER_PATH}")
     root_logger.critical(f"")
-    root_logger.critical(f"  INTERVAL     = {INTERVAL}")
+    root_logger.critical(f"  INTERVAL     = {INTERVAL} min")
     root_logger.critical(r"======================================")
 
     intents = discord.Intents.default()
