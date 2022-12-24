@@ -1,6 +1,6 @@
 # source: https://wooiljeong.github.io/python/slack-bot/
 from slack_sdk import WebClient
-
+from app.config import *
 class SlackAPI:
     """
     슬랙 API 핸들러
@@ -86,3 +86,27 @@ class SlackAPI:
             text = text
         )
         return result
+
+def init_slack_channel(channel_name: str):
+    try:
+        s = SlackAPI(SLACK_KEY)
+        s.channel_id = s.get_channel_id(channel_name)
+        root_logger.critical(f"Initialize Slack > channel_id = {s.channel_id}")
+    except Exception as e:
+        root_logger.critical(f"Failed init slack > channel_name = {channel_name}, err = {e}")
+
+    return s
+
+def post_slack_message(s: SlackAPI, text: str):
+    if len(s.channel_id) > 0 :
+        try :
+            res = s.post_message(s.channel_id, text)
+            root_logger.critical("Send Slack Message : " + text)
+            return res
+        except Exception as e:
+            root_logger.critical(f"Failed Send Slack Message > id : {s.channel_id}, text : {text}, err = {e}")
+            res = ""
+            return res
+    return ""
+
+slack = init_slack_channel(SLACK_CHANNEL)

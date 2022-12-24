@@ -1,1 +1,0 @@
-MAIN_URL = "https://flight.naver.com/"

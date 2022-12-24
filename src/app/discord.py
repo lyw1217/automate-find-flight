@@ -1,27 +1,9 @@
-from app.config import *
-from app.flight import *
 from discord.ext import tasks
 import hashlib
 import discord
 
-initial_str = '''
-█▀▀ █ █▄░█ █▀▄  █▀▀ █░░ █ █▀▀ █░█ ▀█▀
-█▀░ █ █░▀█ █▄▀  █▀░ █▄▄ █ █▄█ █▀█ ░█░
-by Youngwoo\n
-'''
-
-help_str = f'''
-🥇 네이버 왕복 항공권 자동 검색 ({INTERVAL}분마다)\n
-🥈 사용 방법 : !항공권 [도시] [출발일] [시간대...] [도착일] [시간대...]\n
-🥉 사용 예시 : !항공권 오사카 23-01-26 06-09,09-12 23-01-29 15-18,18-21
-        - [인천 <-> 오사카]
-        - [23년 01월 26일, 06시-09시, 09시-12시 인천 출발]
-        - [23년 01월 29일, 15시-18시, 18시-21시 오사카 출발]\n
-🏅 적용 가능한 [시간대]
-        [ 00-06 | 06-09 | 09-12 | 12-15 | 15-18 | 18-21 | 21-00 ]\n
-📄 목록 조회 : !목록
-❌ 목록 삭제 : !삭제 [ID]
-'''
+from app.config import *
+from app.flight import *
 
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -45,7 +27,7 @@ class MyClient(discord.Client):
     async def on_member_join(self, member):
         guild = member.guild
         if guild.system_channel is not None:
-            to_send = f'Welcome {member.mention} to {guild.name}!\n{initial_str}{help_str}'
+            to_send = f'Welcome {member.mention} to {guild.name}!\n{INITIAL_STR}{HELP_STR}'
             await guild.system_channel.send(to_send)
     
     global flight_list
@@ -84,7 +66,7 @@ class MyClient(discord.Client):
 
         elif message.content.startswith('!항공권'):
             if message.content == '!항공권' :
-                await message.reply(initial_str + help_str, mention_author=True)
+                await message.reply(INITIAL_STR + HELP_STR, mention_author=True)
             else :
                 commands = message.content.split(" ")
                 print(commands)
@@ -119,7 +101,7 @@ class MyClient(discord.Client):
                     
                     flight_list.append(flight)
                 else :
-                    await message.reply(f'명령어를 잘못 입력했습니다.\n{help_str}', mention_author=True)
+                    await message.reply(f'명령어를 잘못 입력했습니다.\n{HELP_STR}', mention_author=True)
                 
     @tasks.loop(seconds=INTERVAL*60)  # task runs every 1800 seconds
     async def find_flight_task(self):
