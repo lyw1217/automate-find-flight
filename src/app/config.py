@@ -76,7 +76,7 @@ else:
 with open(CONFIG_PATH) as json_file:
     configs = json.load(json_file)
 
-    INTERVAL = float(configs['interval'])
+    INTERVAL = int(configs['interval'])
 
 
 if SYS_PLATFORM == 'Windows':
