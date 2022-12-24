@@ -5,8 +5,9 @@ from discord.ext import tasks
 import discord
 
 initial_str = '''
-█▀▀ █ █▄░█ █▀▄   █▀▀ █░░ █ █▀▀ █░█ ▀█▀
-█▀░ █ █░▀█ █▄▀   █▀░ █▄▄ █ █▄█ █▀█ ░█░ by Youngwoo\n
+█▀▀ █ █▄░█ █▀▄  █▀▀ █░░ █ █▀▀ █░█ ▀█▀
+█▀░ █ █░▀█ █▄▀  █▀░ █▄▄ █ █▄█ █▀█ ░█░
+by Youngwoo\n
 '''
 
 help_str = '''
@@ -34,10 +35,10 @@ class MyClient(discord.Client):
             to_send = f'Welcome {member.mention} to {guild.name}!'
             await guild.system_channel.send(to_send)
 
-    #async def setup_hook(self) -> None:
+    async def setup_hook(self) -> None:
         # start the task to run in the background
-        #self.find_flight_task.start()
-        #print("TASK START")
+        self.find_flight_task.start()
+        print("FIND FLIGHT TASK START")
 
     async def on_member_join(self, member):
         guild = member.guild
@@ -57,6 +58,7 @@ class MyClient(discord.Client):
                 commands = message.content.split(" ")
                 print(commands)
                 if len(commands) == 6 :
+                    create_time = time.strftime('%Y.%m.%d - %H:%M:%S')
                     # 도시
                     city = commands[1]
                     # 출발일
@@ -68,25 +70,33 @@ class MyClient(discord.Client):
                     # 도착 시간대
                     arrival_time = commands[5]
                     reply_str = f'''
+⏲️ 생성 시간 : {create_time}
 🧳 도시 : {city}
 📅 출발일 : {departure_day}
 🕒 출발 시간대 : {departure_time}
 🗓️ 도착일 : {arrival_day}
 🕧 도착 시간대 : {arrival_time}
 
-검색 중...
+    대충 {INTERVAL}분에 한 번씩 검색해서 알려드릴게요.
 '''
-
                     await message.reply(reply_str, mention_author=True)
-                    self.find_flight_task.start(city, departure_day, departure_time, arrival_day, arrival_time)
+
+                    flight = Flight(create_time, city, departure_day, departure_time, arrival_day, arrival_time)
+                    res = await flight.get_flight()
+                    await message.reply(res, mention_author=True)
+
+                    global flight_list
+                    flight_list.append(flight)
                 else :
                     await message.reply(f'명령어를 잘못 입력했습니다.\n{help_str}', mention_author=True)
                 
-    @tasks.loop(seconds=1800)  # task runs every 1800 seconds
-    async def find_flight_task(self, city, departure_day, departure_time, arrival_day, arrival_time):
-        res = await find_flight(city, departure_day, departure_time, arrival_day, arrival_time)
-        channel = self.get_channel(DISCORD_CHANNEL)  # channel ID goes here
-        await channel.send(res)
+    @tasks.loop(seconds=INTERVAL*60)  # task runs every 1800 seconds
+    async def find_flight_task(self):
+        global flight_list
+        for f in flight_list :
+            res = await f.get_flight()
+            channel = self.get_channel(DISCORD_CHANNEL)  # channel ID goes here
+            await channel.send(res)
 
     @find_flight_task.before_loop
     async def before_my_task(self):
