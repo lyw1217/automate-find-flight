@@ -1,7 +1,10 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException
+
 import time
 import asyncio
 
@@ -33,8 +36,13 @@ def post_slack_message(s: SlackAPI, text: str):
 
 slack = init_slack_channel(SLACK_CHANNEL)
     
+
+# 찾는 항공권 목록
+flight_list = list()
+
 class Flight :
-    def __init__(self, create_time:str, city:str, departure_day:str, departure_time:str, arrival_day:str, arrival_time:str):
+    def __init__(self, id:str, create_time:str, city:str, departure_day:str, departure_time:str, arrival_day:str, arrival_time:str):
+        self.id = id
         self.create_time = create_time
         self.city = city
         self.departure_day = departure_day
@@ -42,10 +50,32 @@ class Flight :
         self.arrival_day = arrival_day
         self.arrival_time = arrival_time
 
+    async def find_flight(self):
+
+        count = 0
+        while True :
+            try :
+                res, err = await self.get_flight()
+                if err != None :
+                    raise Exception(err)
+                #post_slack_message(slack, res)
+                return res
+
+            except Exception as e :
+                print(e)
+                print("Error 발생, 재시도")
+                count += 1
+                if count > 3 :
+                    return ""
+                await asyncio.sleep(5)
+
     async def get_flight(self):
         def wait_until(xpath_str):
-            time.sleep(0.1)
-            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, xpath_str)))
+            # https://stackoverflow.com/questions/27003423/staleelementreferenceexception-on-python-selenium
+            ignored_exceptions=(NoSuchElementException,StaleElementReferenceException,)
+            WebDriverWait(driver, 30, ignored_exceptions=ignored_exceptions)\
+                                    .until(expected_conditions.presence_of_element_located((By.XPATH, xpath_str)))
+            time.sleep(0.5)
 
         # chromedriver 설정
         options = webdriver.ChromeOptions()
@@ -94,7 +124,8 @@ class Flight :
         except Exception as e :
             res = "출발일 선택을 실패했습니다."
             root_logger.critical(f"{res}, exception = {e}")
-            return res
+            #driver.close()
+            return res, e
         
         try:
             # 도착일 파싱
@@ -120,7 +151,8 @@ class Flight :
         except Exception as e :
             res = "도착일 선택을 실패했습니다."
             root_logger.critical(f"{res}, exception = {e}")
-            return res
+            #driver.close()
+            return res, e
         
         # 도착 도시 클릭
         xpath = '//b[text() = "도착"]'
@@ -144,7 +176,8 @@ class Flight :
         except Exception as e :
             res = "국가 선택을 실패했습니다."
             root_logger.critical(f"{res}, exception = {e}")
-            return res
+            #driver.close()
+            return res, e
 
         # 항공권 검색 클릭
         xpath = '//span[contains(text(), "항공권 검색")]'
@@ -170,7 +203,8 @@ class Flight :
         except Exception as e :
             res = "가는 날 시간대 선택을 실패했습니다."
             root_logger.critical(f"{res}, exception = {e}")
-            return res
+            #driver.close()
+            return res, e
 
         try :
             # 오는 날 시간대 파싱
@@ -184,7 +218,8 @@ class Flight :
         except Exception as e :
             res = "오는 날 시간대 선택을 실패했습니다."
             root_logger.critical(f"{res}, exception = {e}")
-            return res
+            #driver.close()
+            return res, e
 
         # 적용 클릭
         xpath = '//button[contains(text(), "적용")]'
@@ -200,13 +235,11 @@ class Flight :
         result = list()
         
         result.append(f'''
-< 항공권 검색 결과 >
+< 항공권 검색 결과 > (ID : {self.id}, TIME : {self.create_time})
 ⏲️ 검색 시간 : {time.strftime('%Y.%m.%d - %H:%M:%S')}
 🧳 도시 : {self.city}
-📅 출발일 : {self.departure_day}
-🕒 출발 시간대 : {self.departure_time}
-🗓️ 도착일 : {self.arrival_day}
-🕧 도착 시간대 : {self.arrival_time}
+📅 출발일 : {self.departure_day}  🕒 출발 시간대 : {self.departure_time}
+🗓️ 도착일 : {self.arrival_day}  🕧 도착 시간대 : {self.arrival_time}
 '''
     )
         
@@ -230,23 +263,5 @@ class Flight :
                     break
 
         result.append(f"{driver.current_url}")
-
-        return ''.join(result)
-
-
-async def find_flight(flight:Flight):
-
-    while True :
-        try :
-            res = await flight.get_flight()
-            #post_slack_message(slack, res)
-            return res
-
-        except Exception as e :
-            print(e)
-            print("")
-            print("Error 발생, 재시도")
-            await asyncio.sleep(5)
-
-# 찾는 항공권 목록
-flight_list = list()
+        #driver.close()
+        return ''.join(result), None
